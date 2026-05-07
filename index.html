@@ -1,1 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hydro Power Monitor</title>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    background:#020617;
+    color:white;
+    padding:15px;
+}
+
+.header{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.header h1{
+    font-size:28px;
+    color:#38bdf8;
+}
+
+.header p{
+    color:#94a3b8;
+    margin-top:5px;
+}
+
+.grid{
+    display:grid;
+    gap:15px;
+}
+
+.card{
+    background:#0f172a;
+    border:1px solid #1e293b;
+    border-radius:20px;
+    padding:18px;
+    box-shadow:0 0 20px rgba(56,189,248,0.08);
+}
+
+.card-title{
+    font-size:16px;
+    color:#94a3b8;
+    margin-bottom:12px;
+}
+
+.big-number{
+    font-size:42px;
+    font-weight:bold;
+    color:#38bdf8;
+}
+
+.unit{
+    font-size:20px;
+    color:#94a3b8;
+}
+
+.row{
+    display:flex;
+    justify-content:space-between;
+    margin-top:12px;
+    font-size:15px;
+}
+
+.label{
+    color:#94a3b8;
+}
+
+.value{
+    font-weight:bold;
+}
+
+.battery-box{
+    width:100%;
+    height:22px;
+    background:#1e293b;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.battery-fill{
+    height:100%;
+    width:70%;
+    background:limegreen;
+    transition:0.5s;
+}
+
+.status{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+}
+
+.dot{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:limegreen;
+    box-shadow:0 0 10px limegreen;
+}
+
+.chart-container{
+    margin-top:15px;
+}
+
+.footer{
+    text-align:center;
+    margin-top:20px;
+    color:#64748b;
+    font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>⚡ 水力發電監控系統</h1>
+    <p>Hydro Power Monitoring Dashboard</p>
+</div>
+
+<div class="grid">
+
+    <!-- 發電資訊 -->
+    <div class="card">
+        <div class="card-title">⚡ 發電系統</div>
+
+        <div>
+            <span class="big-number" id="power">120</span>
+            <span class="unit">W</span>
+        </div>
+
+        <div class="row">
+            <span class="label">發電電流</span>
+            <span class="value"><span id="current">2.5</span> A</span>
+        </div>
+
+        <div class="row">
+            <span class="label">累積發電量</span>
+            <span class="value"><span id="energy">350</span> Wh</span>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="powerChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 電池資訊 -->
+    <div class="card">
+        <div class="card-title">🔋 電池資訊</div>
+
+        <div class="row">
+            <span class="label">電池電壓</span>
+            <span class="value"><span id="voltage">12.5</span> V</span>
+        </div>
+
+        <div class="battery-box">
+            <div class="battery-fill" id="batteryFill"></div>
+        </div>
+
+        <div class="row">
+            <span class="label">電池容量</span>
+            <span class="value"><span id="capacity">70</span>%</span>
+        </div>
+    </div>
+
+    <!-- 殺菌器 -->
+    <div class="card">
+        <div class="card-title">🧪 殺菌系統</div>
+
+        <div class="status">
+            <div class="dot"></div>
+            <span>系統運作中</span>
+        </div>
+
+        <div class="row">
+            <span class="label">運轉時間</span>
+            <span class="value"><span id="runtime">5.2</span> hr</span>
+        </div>
+
+        <div class="row">
+            <span class="label">用電量</span>
+            <span class="value"><span id="usage">42</span> Wh</span>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer">
+    Hydro Monitoring System © 2026
+</div>
+
+<script>
+
+// 圖表
+const ctx = document.getElementById('powerChart');
+
+let labels = [];
+let data = [];
+
+const powerChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: '發電量(W)',
+            data: data,
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56,189,248,0.2)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive:true,
+        plugins:{
+            legend:{
+                labels:{
+                    color:'white'
+                }
+            }
+        },
+        scales:{
+            x:{
+                ticks:{ color:'white' }
+            },
+            y:{
+                ticks:{ color:'white' }
+            }
+        }
+    }
+});
+
+// 模擬資料
+let totalEnergy = 350;
+let runtime = 5;
+
+setInterval(()=>{
+
+    let power = Math.floor(100 + Math.random()*60);
+    let current = (2 + Math.random()*1.5).toFixed(2);
+    let voltage = (12 + Math.random()*1.2).toFixed(2);
+    let capacity = Math.floor(20 + Math.random()*80);
+    let usage = Math.floor(30 + Math.random()*25);
+
+    totalEnergy += power * 0.01;
+    runtime += 0.01;
+
+    // 更新數值
+    document.getElementById("power").innerHTML = power;
+    document.getElementById("current").innerHTML = current;
+    document.getElementById("energy").innerHTML = totalEnergy.toFixed(0);
+
+    document.getElementById("voltage").innerHTML = voltage;
+    document.getElementById("capacity").innerHTML = capacity;
+
+    document.getElementById("runtime").innerHTML = runtime.toFixed(1);
+    document.getElementById("usage").innerHTML = usage;
+
+    // 電池動畫
+    let batteryFill = document.getElementById("batteryFill");
+
+    batteryFill.style.width = capacity + "%";
+
+    if(capacity > 50){
+        batteryFill.style.background = "limegreen";
+    }
+    else if(capacity > 20){
+        batteryFill.style.background = "orange";
+    }
+    else{
+        batteryFill.style.background = "red";
+    }
+
+    // 圖表
+    const time = new Date().toLocaleTimeString();
+
+    labels.push(time);
+    data.push(power);
+
+    if(labels.length > 10){
+        labels.shift();
+        data.shift();
+    }
+
+    powerChart.update();
+
+},2000);
+
+</script>
+
+</body>
+</html>
